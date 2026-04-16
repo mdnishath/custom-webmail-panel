@@ -1,0 +1,5 @@
+user = {{MAIL_DB_USER}}
+password = {{MAIL_DB_PASS}}
+hosts = 127.0.0.1
+dbname = {{MAIL_DB_NAME}}
+query = SELECT CONCAT(SUBSTRING_INDEX(email,'@',-1),'/',SUBSTRING_INDEX(email,'@',1),'/') FROM virtual_users WHERE email='%s' AND active=1

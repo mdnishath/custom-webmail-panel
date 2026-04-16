@@ -1,0 +1,99 @@
+<%- include('header') %>
+
+<div class="top-bar">
+  <div>
+    <h4 class="mb-0 fw-bold">Dashboard</h4>
+    <small class="text-muted">Mail server overview</small>
+  </div>
+  <span class="badge bg-success"><i class="bi bi-circle-fill" style="font-size:0.5rem"></i> Server Active</span>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-4">
+    <div class="stat-card domains">
+      <h6>Total Domains</h6>
+      <div class="number"><%= stats.domains %></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card emails">
+      <h6>Email Accounts</h6>
+      <div class="number"><%= stats.users %></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card aliases">
+      <h6>Aliases</h6>
+      <div class="number"><%= stats.aliases %></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-globe"></i> Recent Domains</span>
+        <a href="/domains" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover">
+          <thead><tr><th>Domain</th><th>Status</th><th>Created</th></tr></thead>
+          <tbody>
+            <% if (recentDomains.length === 0) { %>
+              <tr><td colspan="3" class="text-center text-muted py-4">No domains yet. <a href="/domains">Add one</a></td></tr>
+            <% } %>
+            <% recentDomains.forEach(function(d) { %>
+              <tr>
+                <td><strong><%= d.name %></strong></td>
+                <td><span class="badge <%= d.active ? 'badge-active' : 'badge-inactive' %>"><%= d.active ? 'Active' : 'Inactive' %></span></td>
+                <td class="text-muted"><%= new Date(d.created_at).toLocaleDateString() %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-envelope"></i> Recent Accounts</span>
+        <a href="/emails" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover">
+          <thead><tr><th>Email</th><th>Domain</th><th>Status</th></tr></thead>
+          <tbody>
+            <% if (recentUsers.length === 0) { %>
+              <tr><td colspan="3" class="text-center text-muted py-4">No accounts yet. <a href="/emails">Create one</a></td></tr>
+            <% } %>
+            <% recentUsers.forEach(function(u) { %>
+              <tr>
+                <td><strong><%= u.email %></strong></td>
+                <td><%= u.domain_name %></td>
+                <td><span class="badge <%= u.active ? 'badge-active' : 'badge-inactive' %>"><%= u.active ? 'Active' : 'Inactive' %></span></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mt-2">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-terminal"></i> Quick Actions</div>
+      <div class="card-body">
+        <a href="/domains" class="btn btn-outline-primary me-2"><i class="bi bi-plus-circle"></i> Add Domain</a>
+        <a href="/emails" class="btn btn-outline-success me-2"><i class="bi bi-person-plus"></i> Create Email</a>
+        <a href="/aliases" class="btn btn-outline-warning me-2"><i class="bi bi-arrow-left-right"></i> Add Alias</a>
+        <a href="/dkim" class="btn btn-outline-info"><i class="bi bi-shield-check"></i> Setup DKIM</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('footer') %>

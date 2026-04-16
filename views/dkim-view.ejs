@@ -1,0 +1,51 @@
+<%- include('header') %>
+
+<div class="top-bar">
+  <div>
+    <h4 class="mb-0 fw-bold"><i class="bi bi-key"></i> DKIM Record: <%= domain.name %></h4>
+    <small class="text-muted">Copy this and add as TXT record in your DNS</small>
+  </div>
+  <a href="/dkim" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-clipboard"></i> DNS TXT Record to Add</div>
+  <div class="card-body">
+    <div class="mb-3">
+      <label class="form-label fw-bold">Host Name:</label>
+      <div class="input-group">
+        <input type="text" class="form-control bg-light" value="mail._domainkey.<%= domain.name %>" id="dkimHost" readonly>
+        <button class="btn btn-outline-primary" onclick="navigator.clipboard.writeText(document.getElementById('dkimHost').value);this.innerHTML='Copied!';setTimeout(()=>this.innerHTML='<i class=bi-clipboard></i> Copy',2000)"><i class="bi bi-clipboard"></i> Copy</button>
+      </div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-bold">Record Type:</label>
+      <input type="text" class="form-control bg-light" value="TXT" readonly>
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-bold">Value:</label>
+      <div class="input-group">
+        <textarea class="form-control bg-light" id="dkimValue" rows="4" readonly><%= dkimValue %></textarea>
+        <button class="btn btn-outline-primary" onclick="navigator.clipboard.writeText(document.getElementById('dkimValue').value);this.innerHTML='Copied!';setTimeout(()=>this.innerHTML='<i class=bi-clipboard></i> Copy',2000)"><i class="bi bi-clipboard"></i> Copy</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-header"><i class="bi bi-list-check"></i> All Required DNS Records for <%= domain.name %></div>
+  <div class="card-body">
+    <table class="table">
+      <thead><tr><th>Type</th><th>Name</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge bg-primary">A</span></td><td><code>mail</code></td><td><code>YOUR_SERVER_IP</code></td></tr>
+        <tr><td><span class="badge bg-danger">MX</span></td><td><code>@</code></td><td><code>10 mail.<%= domain.name %></code></td></tr>
+        <tr><td><span class="badge bg-warning">TXT</span></td><td><code>@</code></td><td><code>v=spf1 mx a ip4:YOUR_SERVER_IP ~all</code></td></tr>
+        <tr><td><span class="badge bg-warning">TXT</span></td><td><code>_dmarc</code></td><td><code>v=DMARC1; p=quarantine; rua=mailto:admin@<%= domain.name %></code></td></tr>
+        <tr><td><span class="badge bg-success">TXT</span></td><td><code>mail._domainkey</code></td><td><small>See above</small></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('footer') %>

@@ -1,0 +1,78 @@
+<%- include('header') %>
+
+<div class="top-bar">
+  <div>
+    <h4 class="mb-0 fw-bold"><i class="bi bi-arrow-left-right"></i> Email Aliases</h4>
+    <small class="text-muted">Forward emails to other addresses</small>
+  </div>
+  <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#addAliasModal">
+    <i class="bi bi-plus-circle"></i> Add Alias
+  </button>
+</div>
+
+<% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
+<% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover">
+      <thead><tr><th>Source</th><th>Destination</th><th>Domain</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        <% if (aliases.length === 0) { %>
+          <tr><td colspan="5" class="text-center text-muted py-5">No aliases configured.</td></tr>
+        <% } %>
+        <% aliases.forEach(function(a) { %>
+          <tr>
+            <td><strong><%= a.source %></strong></td>
+            <td><%= a.destination %></td>
+            <td><%= a.domain_name %></td>
+            <td><span class="badge <%= a.active ? 'badge-active' : 'badge-inactive' %>"><%= a.active ? 'Active' : 'Inactive' %></span></td>
+            <td>
+              <form method="POST" action="/aliases/<%= a.id %>/delete" class="d-inline" onsubmit="return confirm('Delete this alias?')">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add Alias Modal -->
+<div class="modal fade" id="addAliasModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/aliases/add">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-arrow-left-right"></i> Add Email Alias</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Source (from)</label>
+            <div class="input-group">
+              <input type="text" name="source_user" class="form-control" placeholder="info" required>
+              <span class="input-group-text">@</span>
+              <select name="domain_id" class="form-select" required>
+                <% domains.forEach(function(d) { %>
+                  <option value="<%= d.id %>"><%= d.name %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Destination (forward to)</label>
+            <input type="email" name="destination" class="form-control" placeholder="user@example.com" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning"><i class="bi bi-plus-circle"></i> Add Alias</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('footer') %>

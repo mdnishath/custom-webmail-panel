@@ -1,0 +1,85 @@
+<%- include('header') %>
+
+<div class="top-bar">
+  <div>
+    <h4 class="mb-0 fw-bold"><i class="bi bi-globe"></i> Domains</h4>
+    <small class="text-muted">Manage your mail domains</small>
+  </div>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDomainModal">
+    <i class="bi bi-plus-circle"></i> Add Domain
+  </button>
+</div>
+
+<% if (error) { %>
+  <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle"></i> <%= error %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+<% } %>
+<% if (success) { %>
+  <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle"></i> <%= success %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+<% } %>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover">
+      <thead>
+        <tr><th>Domain</th><th>Accounts</th><th>Aliases</th><th>Max Accounts</th><th>Quota</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        <% if (domains.length === 0) { %>
+          <tr><td colspan="7" class="text-center text-muted py-5"><i class="bi bi-inbox" style="font-size:2rem"></i><br>No domains yet. Click "Add Domain" to get started.</td></tr>
+        <% } %>
+        <% domains.forEach(function(d) { %>
+          <tr>
+            <td><strong><%= d.name %></strong></td>
+            <td><%= d.user_count || 0 %></td>
+            <td><%= d.alias_count || 0 %></td>
+            <td><%= d.max_accounts %></td>
+            <td><%= d.max_quota_mb %> MB</td>
+            <td><span class="badge <%= d.active ? 'badge-active' : 'badge-inactive' %>"><%= d.active ? 'Active' : 'Inactive' %></span></td>
+            <td>
+              <a href="/domains/<%= d.id %>/dns" class="btn btn-sm btn-outline-info me-1" title="DNS Records"><i class="bi bi-card-list"></i></a>
+              <form method="POST" action="/domains/<%= d.id %>/toggle" class="d-inline"><button class="btn btn-sm btn-outline-warning me-1" title="Toggle"><i class="bi bi-toggle-on"></i></button></form>
+              <form method="POST" action="/domains/<%= d.id %>/delete" class="d-inline" onsubmit="return confirm('Delete this domain and all its accounts?')"><button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button></form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add Domain Modal -->
+<div class="modal fade" id="addDomainModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/domains/add">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-globe"></i> Add New Domain</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Domain Name</label>
+            <input type="text" name="name" class="form-control" placeholder="example.com" required>
+            <small class="text-muted">e.g., example.com, mysite.org</small>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-semibold">Max Accounts</label>
+              <input type="number" name="max_accounts" class="form-control" value="100">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-semibold">Max Quota (MB)</label>
+              <input type="number" name="max_quota_mb" class="form-control" value="10240">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add Domain</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('footer') %>

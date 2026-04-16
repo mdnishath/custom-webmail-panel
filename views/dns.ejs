@@ -1,0 +1,146 @@
+<%- include('header') %>
+
+<div class="top-bar">
+  <div>
+    <h4 class="mb-0 fw-bold"><i class="bi bi-card-list"></i> DNS Records: <%= domain.name %></h4>
+    <small class="text-muted">Add these records to your domain's DNS settings</small>
+  </div>
+  <div>
+    <button class="btn btn-outline-success me-2" onclick="copyAllRecords()"><i class="bi bi-clipboard"></i> Copy All</button>
+    <a href="/domains" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index:9999">
+  <div id="copyToast" class="toast align-items-center text-bg-success" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toastMsg"><i class="bi bi-check-circle"></i> Copied!</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-info">
+  <i class="bi bi-info-circle"></i> Add these records to your domain registrar's DNS settings. Click any value to copy it.
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-globe"></i> Required DNS Records</div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Type</th><th>Host Name</th><th>Value</th><th>Priority</th><th></th></tr></thead>
+      <tbody>
+        <!-- A Record: mail -->
+        <tr>
+          <td><span class="badge bg-primary">A</span></td>
+          <td><code>mail</code></td>
+          <td><code class="copyable" onclick="copyValue('YOUR_SERVER_IP')" style="cursor:pointer" title="Click to copy">YOUR_SERVER_IP</code></td>
+          <td>-</td>
+          <td><button class="btn btn-sm btn-outline-primary" onclick="copyValue('YOUR_SERVER_IP')"><i class="bi bi-clipboard"></i></button></td>
+        </tr>
+        <!-- A Record: webmail -->
+        <tr>
+          <td><span class="badge bg-primary">A</span></td>
+          <td><code>webmail</code></td>
+          <td><code class="copyable" onclick="copyValue('YOUR_SERVER_IP')" style="cursor:pointer" title="Click to copy">YOUR_SERVER_IP</code></td>
+          <td>-</td>
+          <td><button class="btn btn-sm btn-outline-primary" onclick="copyValue('YOUR_SERVER_IP')"><i class="bi bi-clipboard"></i></button></td>
+        </tr>
+        <!-- MX Record -->
+        <tr>
+          <td><span class="badge bg-danger">MX</span></td>
+          <td><code>@</code></td>
+          <td><code class="copyable" onclick="copyValue('mail.<%= domain.name %>')" style="cursor:pointer" title="Click to copy">mail.<%= domain.name %></code></td>
+          <td><strong>10</strong></td>
+          <td><button class="btn btn-sm btn-outline-primary" onclick="copyValue('mail.<%= domain.name %>')"><i class="bi bi-clipboard"></i></button></td>
+        </tr>
+        <!-- SPF -->
+        <tr>
+          <td><span class="badge bg-warning text-dark">TXT</span></td>
+          <td><code>@</code></td>
+          <td><code class="copyable" onclick="copyValue('v=spf1 mx a ip4:YOUR_SERVER_IP ~all')" style="cursor:pointer" title="Click to copy">v=spf1 mx a ip4:YOUR_SERVER_IP ~all</code></td>
+          <td>-</td>
+          <td><button class="btn btn-sm btn-outline-primary" onclick="copyValue('v=spf1 mx a ip4:YOUR_SERVER_IP ~all')"><i class="bi bi-clipboard"></i></button></td>
+        </tr>
+        <!-- DMARC -->
+        <tr>
+          <td><span class="badge bg-warning text-dark">TXT</span></td>
+          <td><code>_dmarc</code></td>
+          <td><code class="copyable" onclick="copyValue('v=DMARC1; p=quarantine; rua=mailto:admin@<%= domain.name %>')" style="cursor:pointer" title="Click to copy">v=DMARC1; p=quarantine; rua=mailto:admin@<%= domain.name %></code></td>
+          <td>-</td>
+          <td><button class="btn btn-sm btn-outline-primary" onclick="copyValue('v=DMARC1; p=quarantine; rua=mailto:admin@<%= domain.name %>')"><i class="bi bi-clipboard"></i></button></td>
+        </tr>
+        <!-- DKIM -->
+        <% if (dkimValue) { %>
+        <tr>
+          <td><span class="badge bg-success">TXT</span></td>
+          <td><code>mail._domainkey</code></td>
+          <td><code class="copyable" onclick="copyValue(document.getElementById('dkimFull').value)" style="cursor:pointer;word-break:break-all;font-size:0.7rem;max-width:400px;display:inline-block" title="Click to copy"><%= dkimValue.substring(0, 80) %>...</code>
+            <input type="hidden" id="dkimFull" value="<%= dkimValue %>">
+          </td>
+          <td>-</td>
+          <td><button class="btn btn-sm btn-outline-success" onclick="copyValue(document.getElementById('dkimFull').value)"><i class="bi bi-clipboard"></i> Copy</button></td>
+        </tr>
+        <% } else { %>
+        <tr>
+          <td><span class="badge bg-secondary">TXT</span></td>
+          <td><code>mail._domainkey</code></td>
+          <td><span class="text-muted">Not generated yet</span></td>
+          <td>-</td>
+          <td><a href="/dkim" class="btn btn-sm btn-outline-primary">Generate DKIM</a></td>
+        </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<% if (dkimValue) { %>
+<div class="card mt-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-key"></i> Full DKIM Value (click to copy)</span>
+    <button class="btn btn-sm btn-success" onclick="copyValue(document.getElementById('dkimFull').value)"><i class="bi bi-clipboard"></i> Copy DKIM</button>
+  </div>
+  <div class="card-body">
+    <pre class="bg-light p-3 rounded" style="word-wrap:break-word;white-space:pre-wrap;cursor:pointer;font-size:0.8rem" onclick="copyValue(document.getElementById('dkimFull').value)"><%= dkimValue %></pre>
+  </div>
+</div>
+<% } %>
+
+<div class="card mt-3">
+  <div class="card-header"><i class="bi bi-info-circle"></i> rDNS / PTR Record</div>
+  <div class="card-body">
+    <p>VPS provider-এর panel থেকে set করুন:</p>
+    <code>YOUR_SERVER_IP</code> → <code>mail.<%= domain.name %></code>
+  </div>
+</div>
+
+<script>
+function copyValue(val) {
+  navigator.clipboard.writeText(val).then(function() {
+    document.getElementById('toastMsg').innerHTML = '<i class="bi bi-check-circle"></i> Copied!';
+    var t = new bootstrap.Toast(document.getElementById('copyToast'), {delay: 1500});
+    t.show();
+  });
+}
+
+function copyAllRecords() {
+  var all = "DNS Records for <%= domain.name %>\n\n";
+  all += "A Record: mail -> YOUR_SERVER_IP\n";
+  all += "A Record: webmail -> YOUR_SERVER_IP\n";
+  all += "MX Record: @ -> mail.<%= domain.name %> (Priority: 10)\n";
+  all += "TXT Record: @ -> v=spf1 mx a ip4:YOUR_SERVER_IP ~all\n";
+  all += "TXT Record: _dmarc -> v=DMARC1; p=quarantine; rua=mailto:admin@<%= domain.name %>\n";
+  <% if (dkimValue) { %>
+  all += "TXT Record: mail._domainkey -> " + document.getElementById('dkimFull').value + "\n";
+  <% } %>
+  navigator.clipboard.writeText(all).then(function() {
+    document.getElementById('toastMsg').innerHTML = '<i class="bi bi-check-circle"></i> All records copied!';
+    var t = new bootstrap.Toast(document.getElementById('copyToast'), {delay: 2000});
+    t.show();
+  });
+}
+</script>
+
+<%- include('footer') %>

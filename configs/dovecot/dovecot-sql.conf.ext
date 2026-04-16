@@ -1,0 +1,4 @@
+driver = mysql
+connect = host=127.0.0.1 dbname={{MAIL_DB_NAME}} user={{MAIL_DB_USER}} password={{MAIL_DB_PASS}}
+default_pass_scheme = BLF-CRYPT
+password_query = SELECT email as user, password FROM virtual_users WHERE email='%u' AND active=1

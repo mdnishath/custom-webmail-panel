@@ -1,0 +1,76 @@
+# ============================================================
+# Postfix Main Configuration
+# Multi-domain virtual mail server
+# ============================================================
+
+# Basic settings
+smtpd_banner = $myhostname ESMTP
+biff = no
+append_dot_mydomain = no
+readme_directory = no
+compatibility_level = 3.6
+
+# Hostname
+myhostname = {{HOSTNAME}}
+mydomain = {{HOSTNAME}}
+myorigin = /etc/mailname
+mydestination = localhost
+mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
+
+# Virtual domain settings
+virtual_transport = lmtp:unix:private/dovecot-lmtp
+virtual_mailbox_domains = mysql:/etc/postfix/mysql-virtual-mailbox-domains.cf
+virtual_mailbox_maps = mysql:/etc/postfix/mysql-virtual-mailbox-maps.cf
+virtual_alias_maps = mysql:/etc/postfix/mysql-virtual-alias-maps.cf
+
+# TLS settings
+smtpd_tls_cert_file = /etc/letsencrypt/live/{{HOSTNAME}}/fullchain.pem
+smtpd_tls_key_file = /etc/letsencrypt/live/{{HOSTNAME}}/privkey.pem
+smtpd_use_tls = yes
+smtpd_tls_auth_only = yes
+smtpd_tls_security_level = may
+smtpd_tls_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
+smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
+smtpd_tls_mandatory_ciphers = high
+smtp_tls_security_level = may
+smtp_tls_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
+
+# SASL Authentication
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = private/auth
+smtpd_sasl_auth_enable = yes
+smtpd_sasl_security_options = noanonymous
+smtpd_sasl_local_domain = $myhostname
+
+# Restrictions
+smtpd_helo_required = yes
+smtpd_helo_restrictions =
+    permit_mynetworks,
+    reject_non_fqdn_helo_hostname,
+    reject_invalid_helo_hostname
+
+smtpd_sender_restrictions =
+    permit_mynetworks,
+    reject_non_fqdn_sender,
+    reject_unknown_sender_domain
+
+smtpd_recipient_restrictions =
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_unauth_destination,
+    reject_non_fqdn_recipient,
+    reject_unknown_recipient_domain
+
+# Message size limit (50MB)
+message_size_limit = 52428800
+mailbox_size_limit = 0
+
+# OpenDKIM
+milter_protocol = 6
+milter_default_action = accept
+smtpd_milters = unix:opendkim/opendkim.sock
+non_smtpd_milters = $smtpd_milters
+
+# Queue settings
+maximal_queue_lifetime = 3d
+bounce_queue_lifetime = 1d

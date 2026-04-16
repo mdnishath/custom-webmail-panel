@@ -1,0 +1,5 @@
+user = {{MAIL_DB_USER}}
+password = {{MAIL_DB_PASS}}
+hosts = 127.0.0.1
+dbname = {{MAIL_DB_NAME}}
+query = SELECT name FROM virtual_domains WHERE name='%s' AND active=1

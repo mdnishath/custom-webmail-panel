@@ -1,0 +1,59 @@
+<%- include('header') %>
+
+<div class="top-bar">
+  <div>
+    <h4 class="mb-0 fw-bold"><i class="bi bi-shield-check"></i> DKIM Management</h4>
+    <small class="text-muted">Generate and manage DKIM keys for your domains</small>
+  </div>
+</div>
+
+<% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
+<% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover">
+      <thead><tr><th>Domain</th><th>Selector</th><th>DKIM Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        <% if (domains.length === 0) { %>
+          <tr><td colspan="4" class="text-center text-muted py-5">No active domains. Add a domain first.</td></tr>
+        <% } %>
+        <% domains.forEach(function(d) { %>
+          <tr>
+            <td><strong><%= d.name %></strong></td>
+            <td><%= d.dkim_selector || 'mail' %></td>
+            <td>
+              <% if (d.dkim_public_key) { %>
+                <span class="badge bg-success">Configured</span>
+              <% } else { %>
+                <span class="badge bg-secondary">Not configured</span>
+              <% } %>
+            </td>
+            <td>
+              <form method="POST" action="/dkim/generate/<%= d.id %>" class="d-inline" onsubmit="return confirm('Generate new DKIM keys for <%= d.name %>?')">
+                <button class="btn btn-sm btn-outline-primary"><i class="bi bi-key"></i> <%= d.dkim_public_key ? 'Regenerate' : 'Generate' %> DKIM</button>
+              </form>
+              <% if (d.dkim_public_key) { %>
+                <a href="/dkim/view/<%= d.id %>" class="btn btn-sm btn-outline-info ms-1"><i class="bi bi-eye"></i> View DNS Record</a>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card mt-4">
+  <div class="card-header"><i class="bi bi-info-circle"></i> How to Setup DKIM</div>
+  <div class="card-body">
+    <ol>
+      <li>Click <strong>Generate DKIM</strong> for each domain</li>
+      <li>Click <strong>View DNS Record</strong> to see the TXT record</li>
+      <li>Copy the record and add it as a TXT record in your domain's DNS</li>
+      <li>Wait for DNS propagation (can take up to 48 hours)</li>
+    </ol>
+  </div>
+</div>
+
+<%- include('footer') %>

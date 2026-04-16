@@ -1,11 +1,37 @@
 {
-  "name": "mail-admin-panel",
+  "name": "custom-webmail-panel",
   "version": "1.0.0",
-  "description": "Custom Mail Server Admin Panel",
+  "description": "Self-hosted mail server admin panel with multi-session webmail support. Manage multiple domains, email accounts, aliases, DKIM, and DNS records. Features simultaneous webmail logins in the same browser via path-based cookie isolation.",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js"
+  },
+  "keywords": [
+    "mail-server",
+    "webmail",
+    "admin-panel",
+    "postfix",
+    "dovecot",
+    "roundcube",
+    "email",
+    "multi-domain",
+    "dkim",
+    "self-hosted",
+    "multi-session"
+  ],
+  "author": "mdnishath",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mdnishath/custom-webmail-panel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mdnishath/custom-webmail-panel/issues"
+  },
+  "homepage": "https://github.com/mdnishath/custom-webmail-panel#readme",
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

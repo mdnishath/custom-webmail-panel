@@ -22,7 +22,7 @@ if (!$user || !$pass) {
 // Create unique instance hash from email (6 chars)
 $instance = substr(md5($user), 0, 8);
 $basePath = "/m/" . $instance . "/";
-$baseUrl = "https://webmail.YOUR_DOMAIN" . $basePath;
+$baseUrl = "https://webmail.{{DOMAIN_BASE}}" . $basePath;
 $sessionName = "rcsess_" . $instance;
 
 // Step 1: Get fresh login page with CSRF token (via the multi-session path)
@@ -60,7 +60,7 @@ if (!$sessId || !$csrfToken) {
 $postData = http_build_query(array(
     "_task" => "login",
     "_action" => "login",
-    "_timezone" => "Asia/Dhaka",
+    "_timezone" => date_default_timezone_get(),
     "_token" => $csrfToken,
     "_user" => $user,
     "_pass" => $pass,

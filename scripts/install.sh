@@ -1,8 +1,13 @@
 #!/bin/bash
 #============================================================
-# Mail Server Installation Script
+# Custom Webmail Panel - Mail Server Installation Script
 # Postfix + Dovecot + Roundcube + MariaDB + Nginx + Certbot
 # Ubuntu 22.04/24.04
+#
+# Usage:
+#   curl -fsSL https://raw.githubusercontent.com/mdnishath/custom-webmail-panel/main/scripts/install.sh | sudo bash
+#   OR
+#   git clone https://github.com/mdnishath/custom-webmail-panel.git && cd custom-webmail-panel && sudo bash scripts/install.sh
 #============================================================
 
 set -euo pipefail
@@ -21,8 +26,31 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 # Must run as root
 [[ $EUID -ne 0 ]] && error "This script must be run as root (use sudo)"
 
+# Check OS
+if ! grep -qiE 'ubuntu (22|24)\.' /etc/os-release 2>/dev/null; then
+    warn "This script is designed for Ubuntu 22.04/24.04. Other versions may work but are untested."
+fi
+
 #------------------------------------------------------------
-# Configuration - CHANGE THESE
+# Step 0: Clone repo if running via curl pipe
+#------------------------------------------------------------
+REPO_URL="https://github.com/mdnishath/custom-webmail-panel.git"
+INSTALL_DIR="/root/custom-webmail-panel"
+
+if [[ ! -f "$(dirname "$0")/../package.json" ]] 2>/dev/null; then
+    log "Downloading Custom Webmail Panel from GitHub..."
+    apt-get update -qq && apt-get install -y -qq git > /dev/null 2>&1
+    rm -rf "$INSTALL_DIR"
+    git clone --depth 1 "$REPO_URL" "$INSTALL_DIR"
+    PROJECT_DIR="$INSTALL_DIR"
+else
+    PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+fi
+
+log "Using project directory: $PROJECT_DIR"
+
+#------------------------------------------------------------
+# Configuration - Interactive prompts
 #------------------------------------------------------------
 HOSTNAME=""
 MYSQL_ROOT_PASS=""
@@ -33,19 +61,26 @@ ADMIN_PANEL_PORT=3000
 
 echo -e "${CYAN}"
 echo "============================================"
-echo "  Mail Server Setup - Configuration"
+echo "  Custom Webmail Panel - Setup"
+echo "  Multi-domain Mail Server Installer"
 echo "============================================"
 echo -e "${NC}"
 
 read -p "Enter server hostname (e.g., mail.yourdomain.com): " HOSTNAME
+[[ -z "$HOSTNAME" ]] && error "Hostname is required"
+
 read -sp "Enter MySQL root password: " MYSQL_ROOT_PASS
 echo
+[[ -z "$MYSQL_ROOT_PASS" ]] && error "MySQL root password is required"
+
 read -sp "Enter mail database password: " MAIL_DB_PASS
 echo
+[[ -z "$MAIL_DB_PASS" ]] && error "Mail database password is required"
+
 read -p "Enter admin panel port [3000]: " input_port
 ADMIN_PANEL_PORT=${input_port:-3000}
 
-# Save config for later use
+# Save config for later use (scripts/add-domain.sh, etc.)
 cat > /root/.mail-server-config <<EOF
 HOSTNAME=$HOSTNAME
 MAIL_DB_NAME=$MAIL_DB_NAME
@@ -118,7 +153,7 @@ MYSQL_SCRIPT
 
 # Import schema
 log "Importing database schema..."
-mysql -u root -p"${MYSQL_ROOT_PASS}" ${MAIL_DB_NAME} < /root/mail-server/database/schema.sql
+mysql -u root -p"${MYSQL_ROOT_PASS}" ${MAIL_DB_NAME} < "${PROJECT_DIR}/database/schema.sql"
 
 #------------------------------------------------------------
 # Step 4: Create vmail user
@@ -134,11 +169,11 @@ chmod 770 /var/mail/vhosts
 # Step 5: Postfix Configuration
 #------------------------------------------------------------
 log "Configuring Postfix..."
-cp /root/mail-server/configs/postfix/main.cf /etc/postfix/main.cf
-cp /root/mail-server/configs/postfix/master.cf /etc/postfix/master.cf
-cp /root/mail-server/configs/postfix/mysql-virtual-mailbox-domains.cf /etc/postfix/mysql-virtual-mailbox-domains.cf
-cp /root/mail-server/configs/postfix/mysql-virtual-mailbox-maps.cf /etc/postfix/mysql-virtual-mailbox-maps.cf
-cp /root/mail-server/configs/postfix/mysql-virtual-alias-maps.cf /etc/postfix/mysql-virtual-alias-maps.cf
+cp "${PROJECT_DIR}/configs/postfix/main.cf" /etc/postfix/main.cf
+cp "${PROJECT_DIR}/configs/postfix/master.cf" /etc/postfix/master.cf
+cp "${PROJECT_DIR}/configs/postfix/mysql-virtual-mailbox-domains.cf" /etc/postfix/mysql-virtual-mailbox-domains.cf
+cp "${PROJECT_DIR}/configs/postfix/mysql-virtual-mailbox-maps.cf" /etc/postfix/mysql-virtual-mailbox-maps.cf
+cp "${PROJECT_DIR}/configs/postfix/mysql-virtual-alias-maps.cf" /etc/postfix/mysql-virtual-alias-maps.cf
 
 # Replace placeholders
 sed -i "s/{{HOSTNAME}}/${HOSTNAME}/g" /etc/postfix/main.cf
@@ -153,13 +188,13 @@ chown root:postfix /etc/postfix/mysql-virtual-*.cf
 # Step 6: Dovecot Configuration
 #------------------------------------------------------------
 log "Configuring Dovecot..."
-cp /root/mail-server/configs/dovecot/dovecot.conf /etc/dovecot/dovecot.conf
-cp /root/mail-server/configs/dovecot/10-auth.conf /etc/dovecot/conf.d/10-auth.conf
-cp /root/mail-server/configs/dovecot/10-mail.conf /etc/dovecot/conf.d/10-mail.conf
-cp /root/mail-server/configs/dovecot/10-master.conf /etc/dovecot/conf.d/10-master.conf
-cp /root/mail-server/configs/dovecot/10-ssl.conf /etc/dovecot/conf.d/10-ssl.conf
-cp /root/mail-server/configs/dovecot/auth-sql.conf.ext /etc/dovecot/conf.d/auth-sql.conf.ext
-cp /root/mail-server/configs/dovecot/dovecot-sql.conf.ext /etc/dovecot/dovecot-sql.conf.ext
+cp "${PROJECT_DIR}/configs/dovecot/dovecot.conf" /etc/dovecot/dovecot.conf
+cp "${PROJECT_DIR}/configs/dovecot/10-auth.conf" /etc/dovecot/conf.d/10-auth.conf
+cp "${PROJECT_DIR}/configs/dovecot/10-mail.conf" /etc/dovecot/conf.d/10-mail.conf
+cp "${PROJECT_DIR}/configs/dovecot/10-master.conf" /etc/dovecot/conf.d/10-master.conf
+cp "${PROJECT_DIR}/configs/dovecot/10-ssl.conf" /etc/dovecot/conf.d/10-ssl.conf
+cp "${PROJECT_DIR}/configs/dovecot/auth-sql.conf.ext" /etc/dovecot/conf.d/auth-sql.conf.ext
+cp "${PROJECT_DIR}/configs/dovecot/dovecot-sql.conf.ext" /etc/dovecot/dovecot-sql.conf.ext
 
 sed -i "s/{{HOSTNAME}}/${HOSTNAME}/g" /etc/dovecot/conf.d/10-ssl.conf
 sed -i "s/{{MAIL_DB_NAME}}/${MAIL_DB_NAME}/g" /etc/dovecot/dovecot-sql.conf.ext
@@ -174,7 +209,7 @@ chmod -R o-rwx /etc/dovecot
 #------------------------------------------------------------
 log "Configuring OpenDKIM..."
 mkdir -p /etc/opendkim/keys
-cp /root/mail-server/configs/opendkim/opendkim.conf /etc/opendkim.conf
+cp "${PROJECT_DIR}/configs/opendkim/opendkim.conf" /etc/opendkim.conf
 
 cat > /etc/opendkim/TrustedHosts <<EOF
 127.0.0.1
@@ -208,22 +243,28 @@ sa-update || true
 # Step 9: Nginx + Roundcube
 #------------------------------------------------------------
 log "Configuring Nginx for Roundcube..."
-cp /root/mail-server/configs/nginx/roundcube.conf /etc/nginx/sites-available/roundcube
-ln -sf /etc/nginx/sites-available/roundcube /etc/nginx/sites-enabled/roundcube
+if [[ -f "${PROJECT_DIR}/configs/nginx/roundcube.conf" ]]; then
+    cp "${PROJECT_DIR}/configs/nginx/roundcube.conf" /etc/nginx/sites-available/roundcube
+    ln -sf /etc/nginx/sites-available/roundcube /etc/nginx/sites-enabled/roundcube
+fi
 rm -f /etc/nginx/sites-enabled/default
 
 # Roundcube config
-cp /root/mail-server/configs/roundcube/config.inc.php /etc/roundcube/config.inc.php
-sed -i "s/{{MAIL_DB_NAME}}/${MAIL_DB_NAME}/g" /etc/roundcube/config.inc.php
-sed -i "s/{{MAIL_DB_USER}}/${MAIL_DB_USER}/g" /etc/roundcube/config.inc.php
-sed -i "s/{{MAIL_DB_PASS}}/${MAIL_DB_PASS}/g" /etc/roundcube/config.inc.php
-sed -i "s/{{HOSTNAME}}/${HOSTNAME}/g" /etc/roundcube/config.inc.php
+if [[ -f "${PROJECT_DIR}/configs/roundcube/config.inc.php" ]]; then
+    cp "${PROJECT_DIR}/configs/roundcube/config.inc.php" /etc/roundcube/config.inc.php
+    sed -i "s/{{MAIL_DB_NAME}}/${MAIL_DB_NAME}/g" /etc/roundcube/config.inc.php
+    sed -i "s/{{MAIL_DB_USER}}/${MAIL_DB_USER}/g" /etc/roundcube/config.inc.php
+    sed -i "s/{{MAIL_DB_PASS}}/${MAIL_DB_PASS}/g" /etc/roundcube/config.inc.php
+    sed -i "s/{{HOSTNAME}}/${HOSTNAME}/g" /etc/roundcube/config.inc.php
+fi
 
 # Admin panel nginx config
-cp /root/mail-server/configs/nginx/admin-panel.conf /etc/nginx/sites-available/admin-panel
-ln -sf /etc/nginx/sites-available/admin-panel /etc/nginx/sites-enabled/admin-panel
-sed -i "s/{{HOSTNAME}}/${HOSTNAME}/g" /etc/nginx/sites-available/admin-panel
-sed -i "s/{{ADMIN_PANEL_PORT}}/${ADMIN_PANEL_PORT}/g" /etc/nginx/sites-available/admin-panel
+if [[ -f "${PROJECT_DIR}/configs/nginx/admin-panel.conf" ]]; then
+    cp "${PROJECT_DIR}/configs/nginx/admin-panel.conf" /etc/nginx/sites-available/admin-panel
+    ln -sf /etc/nginx/sites-available/admin-panel /etc/nginx/sites-enabled/admin-panel
+    sed -i "s/{{HOSTNAME}}/${HOSTNAME}/g" /etc/nginx/sites-available/admin-panel
+    sed -i "s/{{ADMIN_PANEL_PORT}}/${ADMIN_PANEL_PORT}/g" /etc/nginx/sites-available/admin-panel
+fi
 
 nginx -t && systemctl restart nginx
 
@@ -242,27 +283,37 @@ certbot --nginx -d "$HOSTNAME" -d "webmail.$DOMAIN_BASE" -d "admin.$DOMAIN_BASE"
 #------------------------------------------------------------
 log "Installing Admin Panel..."
 mkdir -p /opt/mail-admin-panel
-cp -r /root/mail-server/panel/* /opt/mail-admin-panel/
+cp -r "${PROJECT_DIR}/src" /opt/mail-admin-panel/
+cp -r "${PROJECT_DIR}/views" /opt/mail-admin-panel/
+cp "${PROJECT_DIR}/package.json" /opt/mail-admin-panel/
+[[ -d "${PROJECT_DIR}/public" ]] && cp -r "${PROJECT_DIR}/public" /opt/mail-admin-panel/
 cd /opt/mail-admin-panel
 
 # Create .env file
+SESSION_SECRET=$(openssl rand -hex 32)
+JWT_SECRET=$(openssl rand -hex 32)
+DEFAULT_MAIL_PASS=$(openssl rand -base64 16)
+
 cat > /opt/mail-admin-panel/.env <<EOF
 PORT=${ADMIN_PANEL_PORT}
 DB_HOST=localhost
 DB_NAME=${MAIL_DB_NAME}
 DB_USER=${MAIL_DB_USER}
 DB_PASS=${MAIL_DB_PASS}
-SESSION_SECRET=$(openssl rand -hex 32)
+SESSION_SECRET=${SESSION_SECRET}
+JWT_SECRET=${JWT_SECRET}
 HOSTNAME=${HOSTNAME}
-JWT_SECRET=$(openssl rand -hex 32)
+NODE_ENV=production
+DEFAULT_MAIL_PASS=${DEFAULT_MAIL_PASS}
 EOF
 
+chmod 600 /opt/mail-admin-panel/.env
 npm install --production
 
 # Create systemd service for admin panel
 cat > /etc/systemd/system/mail-admin-panel.service <<EOF
 [Unit]
-Description=Mail Server Admin Panel
+Description=Custom Webmail Panel - Mail Server Admin
 After=network.target mariadb.service
 
 [Service]
@@ -311,24 +362,28 @@ systemctl enable postfix dovecot opendkim nginx
 #------------------------------------------------------------
 # Done!
 #------------------------------------------------------------
+DOMAIN_BASE=$(echo "$HOSTNAME" | sed 's/^mail\.//')
+
 echo -e "${CYAN}"
 echo "============================================"
-echo "  Mail Server Installation Complete!"
+echo "  Custom Webmail Panel - Install Complete!"
 echo "============================================"
 echo -e "${NC}"
 echo ""
-echo -e "  Webmail:      https://webmail.$(echo $HOSTNAME | sed 's/^mail\.//')"
-echo -e "  Admin Panel:  https://admin.$(echo $HOSTNAME | sed 's/^mail\.//')"
-echo -e "  SMTP Server:  $HOSTNAME:587"
-echo -e "  IMAP Server:  $HOSTNAME:993"
-echo -e ""
-echo -e "  Default Admin Login:"
+echo -e "  ${GREEN}Webmail:${NC}      https://webmail.${DOMAIN_BASE}"
+echo -e "  ${GREEN}Admin Panel:${NC}  https://admin.${DOMAIN_BASE}"
+echo -e "  ${GREEN}SMTP Server:${NC}  $HOSTNAME:587"
+echo -e "  ${GREEN}IMAP Server:${NC}  $HOSTNAME:993"
+echo ""
+echo -e "  ${GREEN}Default Admin Login:${NC}"
 echo -e "    Username: admin"
 echo -e "    Password: (set during first login)"
-echo -e ""
-echo -e "${YELLOW}IMPORTANT NEXT STEPS:${NC}"
-echo -e "  1. Set DNS records (MX, SPF, DKIM, DMARC) - see guide"
+echo ""
+echo -e "${YELLOW}NEXT STEPS:${NC}"
+echo -e "  1. Set DNS records (MX, SPF, DKIM, DMARC) -- see README.md"
 echo -e "  2. Add domains via admin panel"
 echo -e "  3. Create email accounts"
 echo -e "  4. Test sending/receiving"
+echo ""
+echo -e "  Project: https://github.com/mdnishath/custom-webmail-panel"
 echo ""
